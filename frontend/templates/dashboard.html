@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IntelliCrew — My Skills</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f8;
+      min-height: 100vh;
+    }
+
+    /* Navbar */
+    nav {
+      background: #1a237e;
+      color: white;
+      padding: 0 2rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    nav .brand { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.5px; }
+    nav .user-info { display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; }
+    nav button {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 6px;
+      padding: 0.3rem 0.8rem;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    nav button:hover { background: rgba(255,255,255,0.25); }
+
+    /* Main layout */
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .card h2 { font-size: 1rem; color: #1a237e; margin-bottom: 1.2rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Employee info */
+    .info-row { display: flex; justify-content: space-between; padding: 0.45rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+    .info-row:last-child { border-bottom: none; }
+    .info-row .label { color: #888; }
+    .info-row .value { color: #222; font-weight: 500; }
+
+    /* Skill dropdown */
+    .dropdown-wrapper { position: relative; }
+    .dropdown-trigger {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      font-size: 0.9rem;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      background: #fafafa;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+    .dropdown-trigger:hover { border-color: #3949ab; }
+    .dropdown-list {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: white;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 100;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .dropdown-list.open { display: block; }
+    .dropdown-list label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      font-size: 0.88rem;
+    }
+    .dropdown-list label:hover { background: #f0f2f8; }
+    .dropdown-list input[type="checkbox"] { accent-color: #3949ab; }
+
+    /* Tags */
+    #tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.7rem; min-height: 1.4rem; }
+    .tag {
+      background: #e8eaf6;
+      color: #1a237e;
+      border-radius: 12px;
+      padding: 0.18rem 0.6rem;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .tag .remove { cursor: pointer; font-weight: bold; }
+    .tag .remove:hover { color: #c62828; }
+
+    /* Submit */
+    #submit-btn {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 0.65rem;
+      background: #1a237e;
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #submit-btn:disabled { background: #9fa8da; cursor: not-allowed; }
+    #submit-btn:not(:disabled):hover { background: #283593; }
+
+    #status { margin-top: 0.8rem; font-size: 0.85rem; min-height: 1em; }
+    #status.success { color: #2e7d32; }
+    #status.error   { color: #c62828; }
+
+    /* Result table */
+    #result-table {
+      display: none;
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.88rem;
+    }
+    #result-table th {
+      background: #1a237e;
+      color: white;
+      padding: 0.45rem 0.7rem;
+      text-align: left;
+      font-weight: 600;
+    }
+    #result-table td {
+      padding: 0.4rem 0.7rem;
+      border-bottom: 1px solid #e8eaf6;
+      color: #333;
+    }
+    #result-table tr:last-child td { border-bottom: none; }
+    #result-table tr:nth-child(even) td { background: #f5f6ff; }
+
+    /* Current skills */
+    .skill-chip {
+      display: inline-block;
+      background: #e8eaf6;
+      color: #1a237e;
+      border-radius: 12px;
+      padding: 0.2rem 0.7rem;
+      font-size: 0.8rem;
+      margin: 0.2rem;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <span class="brand">IntelliCrew</span>
+    <div class="user-info">
+      <span id="nav-name">Loading...</span>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Employee Info Card -->
+    <div class="card">
+      <h2>My Profile</h2>
+      <div id="emp-info">Loading...</div>
+    </div>
+
+    <!-- Skills Selection Card -->
+    <div class="card">
+      <h2>Update My Skills</h2>
+      <div class="dropdown-wrapper">
+        <div class="dropdown-trigger" id="trigger">
+          <span id="trigger-text">-- Select skills --</span>
+          <span style="font-size:0.7rem;color:#aaa">▼</span>
+        </div>
+        <div class="dropdown-list" id="dropdown-list"></div>
+      </div>
+      <div id="tags"></div>
+      <button id="submit-btn" disabled>Save Skills</button>
+      <p id="status"></p>
+      <table id="result-table">
+        <thead><tr><th>Skill ID</th><th>Skill Name</th></tr></thead>
+        <tbody id="result-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Current Skills Card (full width) -->
+    <div class="card" style="grid-column: 1 / -1;">
+      <h2>My Current Skills in Database</h2>
+      <div id="current-skills">Loading...</div>
+    </div>
+  </div>
+
+  <script>
+    let employee = null;
+    let selected = new Set();
+
+    const trigger     = document.getElementById("trigger");
+    const list        = document.getElementById("dropdown-list");
+    const tagsDiv     = document.getElementById("tags");
+    const submitBtn   = document.getElementById("submit-btn");
+    const status      = document.getElementById("status");
+    const triggerText = document.getElementById("trigger-text");
+    const resultTable = document.getElementById("result-table");
+    const resultBody  = document.getElementById("result-body");
+
+    // Toggle dropdown
+    trigger.addEventListener("click", (e) => { e.stopPropagation(); list.classList.toggle("open"); });
+    document.addEventListener("click", () => list.classList.remove("open"));
+    list.addEventListener("click", (e) => e.stopPropagation());
+
+    function updateUI() {
+      triggerText.textContent = selected.size ? `${selected.size} skill${selected.size > 1 ? "s" : ""} selected` : "-- Select skills --";
+      tagsDiv.innerHTML = "";
+      selected.forEach(skill => {
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.innerHTML = `${skill} <span class="remove" data-skill="${skill}">✕</span>`;
+        tagsDiv.appendChild(tag);
+      });
+      document.querySelectorAll(".skill-cb").forEach(cb => { cb.checked = selected.has(cb.value); });
+      submitBtn.disabled = selected.size === 0;
+      status.textContent = "";
+      status.className = "";
+    }
+
+    tagsDiv.addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) { selected.delete(e.target.dataset.skill); updateUI(); }
+    });
+
+    // Load session employee info
+    async function loadEmployee() {
+      const res = await fetch("/api/me");
+      if (!res.ok) { window.location.href = "/login"; return; }
+      employee = await res.json();
+      document.getElementById("nav-name").textContent = employee.name;
+      document.getElementById("emp-info").innerHTML = `
+        <div class="info-row"><span class="label">Name</span><span class="value">${employee.name}</span></div>
+        <div class="info-row"><span class="label">Email</span><span class="value">${employee.email}</span></div>
+        <div class="info-row"><span class="label">Role</span><span class="value">${employee.role}</span></div>
+        <div class="info-row"><span class="label">Employee ID</span><span class="value">#${employee.id}</span></div>
+      `;
+    }
+
+    // Load all available skills into dropdown
+    async function loadSkillOptions() {
+      const res = await fetch("/api/skills");
+      const skills = await res.json();
+      list.innerHTML = "";
+      skills.forEach(skill => {
+        const label = document.createElement("label");
+        label.innerHTML = `<input type="checkbox" class="skill-cb" value="${skill}"> ${skill}`;
+        list.appendChild(label);
+      });
+      list.addEventListener("change", (e) => {
+        if (!e.target.classList.contains("skill-cb")) return;
+        if (e.target.checked) selected.add(e.target.value);
+        else selected.delete(e.target.value);
+        updateUI();
+      });
+    }
+
+    // Load current skills from DB
+    async function loadCurrentSkills() {
+      const div = document.getElementById("current-skills");
+      div.textContent = "No skills currently.";
+    }
+
+    submitBtn.addEventListener("click", async () => {
+      if (selected.size === 0) return;
+      submitBtn.disabled = true;
+      status.textContent = "Saving...";
+
+      const res = await fetch("/api/employee/skills", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skill_names: [...selected] }),
+      });
+      const data = await res.json();
+
+      if (data.skills) {
+        resultBody.innerHTML = "";
+        data.skills.forEach(s => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${s.skill_id}</td><td>${s.skill_name}</td>`;
+          resultBody.appendChild(tr);
+        });
+        resultTable.style.display = "table";
+        status.textContent = "✓ Skills saved to database!";
+        status.className = "success";
+        // Show saved skills in current skills panel
+        const div = document.getElementById("current-skills");
+        div.innerHTML = data.skills.map(s =>
+          `<span class="skill-chip">${s.skill_name}</span>`
+        ).join("");
+      } else {
+        status.textContent = data.error || "Something went wrong.";
+        status.className = "error";
+      }
+      submitBtn.disabled = selected.size === 0;
+    });
+
+    async function logout() {
+      await fetch("/api/logout", { method: "POST" });
+      window.location.href = "/login";
+    }
+
+    // Init
+    loadEmployee();
+    loadSkillOptions();
+    loadCurrentSkills();
+  </script>
+</body>
+</html>

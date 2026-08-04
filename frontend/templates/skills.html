@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skills Dropdown</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f0f4f8;
+    }
+    .card {
+      background: white;
+      padding: 2rem 2.5rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      width: 320px;
+    }
+    h2 { margin: 0 0 1rem; color: #333; }
+
+    /* custom checkbox dropdown */
+    .dropdown-wrapper { position: relative; }
+    .dropdown-trigger {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fafafa;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-sizing: border-box;
+      user-select: none;
+    }
+    .dropdown-trigger:hover { border-color: #4a90e2; }
+    .dropdown-trigger .arrow { font-size: 0.7rem; color: #888; }
+
+    .dropdown-list {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .dropdown-list.open { display: block; }
+
+    .dropdown-list label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.8rem;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    .dropdown-list label:hover { background: #f0f4f8; }
+    .dropdown-list input[type="checkbox"] { accent-color: #4a90e2; }
+
+    /* tags */
+    #tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      min-height: 1.5rem;
+    }
+    .tag {
+      background: #e3edfa;
+      color: #1a56a0;
+      border-radius: 12px;
+      padding: 0.2rem 0.65rem;
+      font-size: 0.82rem;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .tag .remove {
+      cursor: pointer;
+      font-weight: bold;
+      color: #1a56a0;
+      line-height: 1;
+    }
+    .tag .remove:hover { color: #c62828; }
+
+    button {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 0.65rem;
+      font-size: 1rem;
+      background: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:disabled { background: #a0b8d8; cursor: not-allowed; }
+    button:not(:disabled):hover { background: #357abd; }
+
+    #status {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      min-height: 1.2em;
+    }
+    #status.success { color: #2e7d32; }
+    #status.error   { color: #c62828; }
+
+    #result-table {
+      display: none;
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    #result-table th {
+      background: #4a90e2;
+      color: white;
+      padding: 0.4rem 0.6rem;
+      text-align: left;
+    }
+    #result-table td {
+      padding: 0.4rem 0.6rem;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    #result-table tr:last-child td { border-bottom: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Select Skills</h2>
+
+    <div class="dropdown-wrapper">
+      <div class="dropdown-trigger" id="trigger">
+        <span id="trigger-text">-- Select skills --</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="dropdown-list" id="dropdown-list">
+        <!-- checkboxes injected here -->
+      </div>
+    </div>
+
+    <div id="tags"></div>
+    <button id="submit-btn" disabled>Submit</button>
+    <p id="status"></p>
+    <table id="result-table">
+      <thead><tr><th>Skill ID</th><th>Skill Name</th></tr></thead>
+      <tbody id="result-body"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const trigger     = document.getElementById("trigger");
+    const list        = document.getElementById("dropdown-list");
+    const tagsDiv     = document.getElementById("tags");
+    const submitBtn   = document.getElementById("submit-btn");
+    const status      = document.getElementById("status");
+    const triggerText = document.getElementById("trigger-text");
+    const resultTable = document.getElementById("result-table");
+    const resultBody  = document.getElementById("result-body");
+
+    let selected = new Set();
+
+    // Toggle dropdown open/close
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      list.classList.toggle("open");
+    });
+    document.addEventListener("click", () => list.classList.remove("open"));
+    list.addEventListener("click", (e) => e.stopPropagation());
+
+    function updateUI() {
+      // Update trigger text
+      triggerText.textContent = selected.size
+        ? `${selected.size} skill${selected.size > 1 ? "s" : ""} selected`
+        : "-- Select skills --";
+
+      // Rebuild tags
+      tagsDiv.innerHTML = "";
+      selected.forEach(skill => {
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.innerHTML = `${skill} <span class="remove" data-skill="${skill}">✕</span>`;
+        tagsDiv.appendChild(tag);
+      });
+
+      // Sync checkboxes
+      document.querySelectorAll(".skill-cb").forEach(cb => {
+        cb.checked = selected.has(cb.value);
+      });
+
+      submitBtn.disabled = selected.size === 0;
+      status.textContent = "";
+      status.className = "";
+    }
+
+    tagsDiv.addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) {
+        selected.delete(e.target.dataset.skill);
+        updateUI();
+      }
+    });
+
+    fetch("/api/skills")
+      .then(res => res.json())
+      .then(skills => {
+        list.innerHTML = "";
+        skills.forEach(skill => {
+          const label = document.createElement("label");
+          label.innerHTML = `<input type="checkbox" class="skill-cb" value="${skill}"> ${skill}`;
+          list.appendChild(label);
+        });
+
+        list.addEventListener("change", (e) => {
+          if (!e.target.classList.contains("skill-cb")) return;
+          if (e.target.checked) selected.add(e.target.value);
+          else selected.delete(e.target.value);
+          updateUI();
+        });
+      })
+      .catch(() => {
+        list.innerHTML = "<label style='padding:0.5rem;color:#c62828'>Failed to load</label>";
+      });
+
+    submitBtn.addEventListener("click", () => {
+      if (selected.size === 0) return;
+      submitBtn.disabled = true;
+      status.textContent = "Saving...";
+      status.className = "";
+
+      fetch("/api/skills/select", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skill_names: [...selected] }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.skills) {
+            resultBody.innerHTML = "";
+            data.skills.forEach(s => {
+              const tr = document.createElement("tr");
+              tr.innerHTML = `<td>${s.skill_id}</td><td>${s.skill_name}</td>`;
+              resultBody.appendChild(tr);
+            });
+            resultTable.style.display = "table";
+            status.textContent = "";
+            status.className = "";
+          } else {
+            status.textContent = data.error || "Something went wrong.";
+            status.className = "error";
+          }
+        })
+        .catch(() => {
+          status.textContent = "Network error. Please try again.";
+          status.className = "error";
+        })
+        .finally(() => {
+          submitBtn.disabled = selected.size === 0;
+        });
+    });
+  </script>
+</body>
+</html>
